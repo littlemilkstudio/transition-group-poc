@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from "react";
-import useTransitionMachine, { State } from "./use-transition-machine";
+import useTransitionMachine, { State, Action } from "./use-transition-machine";
 import useUniqueId from "./use-unique-id";
 
 type WithState = {
@@ -21,7 +21,7 @@ type CascadeCtx = {
 } & WithState;
 
 const cascadeCtx = React.createContext<CascadeCtx>({
-  state: "preEnter",
+  state: State.preEnter,
   onEntered: (id: string) => {},
   onExited: (id: string) => {}
 });
@@ -47,7 +47,7 @@ export const CascadeProvider: React.FC<CascadeProviderProps> = props => {
            * todo: Check if all children have entered
            */
           if (false) {
-            send("ENTERED");
+            send(Action.ENTERED);
           }
         },
         onExited: id => {
@@ -56,7 +56,7 @@ export const CascadeProvider: React.FC<CascadeProviderProps> = props => {
            * todo: Check if all children have exited
            */
           if (false) {
-            send("EXITED");
+            send(Action.EXITED);
           }
         }
         /**
@@ -97,11 +97,11 @@ export const useCascade = () => {
 
   useEffect(() => {
     switch (cascade.state) {
-      case "enter":
-        send("ENTER");
+      case State.enter:
+        send(Action.ENTER);
         return;
-      case "exit":
-        send("EXIT");
+      case State.exit:
+        send(Action.EXIT);
         return;
       default:
         return;
@@ -111,8 +111,8 @@ export const useCascade = () => {
   return {
     state,
     onTransitionEnd: () => {
-      send("ENTERED");
-      send("EXITED");
+      send(Action.ENTERED);
+      send(Action.EXITED);
     }
   };
 };

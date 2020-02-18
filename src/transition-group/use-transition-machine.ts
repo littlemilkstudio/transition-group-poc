@@ -1,67 +1,73 @@
 import { useReducer, useLayoutEffect } from "react";
 import { UnionToIntersection } from "./types";
 
+export enum State {
+  preEnter = "preEnter",
+  enter = "enter",
+  idle = "idle",
+  exit = "exit",
+  exited = "exited"
+}
+
+export enum Action {
+  ENTER = "ENTER",
+  ENTERED = "ENTERED",
+  EXIT = "EXIT",
+  EXITED = "EXITED"
+}
+
 export const machine = {
-  initial: "preEnter",
+  initial: State.preEnter,
   states: {
-    preEnter: {
+    [State.preEnter]: {
       entry: ["startEnter"],
-      on: { ENTER: "enter" }
+      on: { [Action.ENTER]: State.enter }
     },
-    enter: {
-      on: { ENTERED: "idle" }
+    [State.enter]: {
+      entry: ["onEntered"],
+      on: { [Action.ENTERED]: State.idle }
     },
-    idle: {
-      on: { EXIT: "exit" }
+    [State.idle]: {
+      on: { [Action.EXIT]: State.exit }
     },
-    exit: {
-      on: { EXITED: "exited" }
+    [State.exit]: {
+      on: { [Action.EXITED]: State.exited }
     },
-    exited: {
-      type: "final"
+    [State.exited]: {
+      type: "final",
+      entry: ["onExited"]
     }
   }
 };
 
-type WithAction<T> = Extract<T, { on: {} }>;
-type KeysFromUnion<T> = keyof UnionToIntersection<T>;
-
-export type Machine = typeof machine;
-export type States = Machine["states"];
-export type State = keyof States;
-export type Actions = WithAction<States[State]>["on"];
-export type Action = KeysFromUnion<Actions>;
-
-export const reducer = (state: State, action: Action) => {
-  return machine.states[state]?.on[action] || state;
+export const reducer = (state: State, action: Action): State => {
+  const current = machine.states[state];
+  if ("on" in current) {
+    return (
+      (current.on as UnionToIntersection<typeof current.on>)[action] || state
+    );
+  }
+  return state;
 };
 
 type TransitionMachine<T> = (args?: T) => [State, React.Dispatch<Action>];
+type EffectsMap = Record<string, VoidFunction>;
 
-type TransitionMachineArgs = {
-  onEntered?: VoidFunction;
-  onExited?: VoidFunction;
-};
-
-const useTransitionMachine: TransitionMachine<TransitionMachineArgs> = args => {
+const useTransitionMachine: TransitionMachine<EffectsMap> = (map = {}) => {
   const [state, send] = useReducer(reducer, machine.initial);
-
   /**
-   * case <state>:
-   *  entry();
-   *  return () => { exit() };
+   * Enter and Exit Effects
    */
   useLayoutEffect(() => {
-    switch (state) {
-      case "entered":
-        args?.onEntered?.();
-        return;
-      case "exited":
-        args?.onExited?.();
-        return;
-      default:
-        return;
+    const current = machine.states[state];
+    if ("entry" in current) {
+      (current.entry || []).map(effect => map[effect]?.());
     }
+    // return () => {
+    //   if ("exit" in current) {
+    //     (current.exit || []).map(effect => map[effect]?.());
+    //   }
+    // };
   }, [state]); //eslint-disable-line
 
   return [state, send];
