@@ -28,6 +28,9 @@ const AnimatedItem = () => {
     <div
       style={{
         position: "absolute",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
         height: "200px",
         width: "200px",
         backgroundColor: "blue",
@@ -36,6 +39,34 @@ const AnimatedItem = () => {
         transition: "1s all ease",
         opacity: `${cascade.state === State.exit ? 0 : 1}`,
         transform: `translateX(${
+          cascade.state === State.exit
+            ? 0
+            : cascade.state === State.enter || cascade.state === State.idle
+            ? 800
+            : 0
+        }px)`
+      }}
+      onTransitionEnd={() => cascade.onTransitionEnd()}
+    >
+      <AnimatedSubItem />
+    </div>
+  );
+};
+
+const AnimatedSubItem = () => {
+  const cascade = useCascade();
+  return (
+    <div
+      style={{
+        position: "absolute",
+        height: "50px",
+        width: "50px",
+        backgroundColor: "red",
+        color: "white",
+        fontSize: "20px",
+        transition: "2s all ease",
+        opacity: `${cascade.state === State.exit ? 0 : 1}`,
+        transform: `translateY(${
           cascade.state === State.exit
             ? 0
             : cascade.state === State.enter || cascade.state === State.idle
