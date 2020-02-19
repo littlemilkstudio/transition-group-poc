@@ -1,6 +1,9 @@
 import { useReducer, useLayoutEffect } from "react";
 import { UnionToIntersection } from "./types";
 
+export const requestNextAnimationFrame = (fn: VoidFunction) =>
+  requestAnimationFrame(() => requestAnimationFrame(() => fn()));
+
 export enum State {
   preEnter = "preEnter",
   enter = "enter",
@@ -20,22 +23,24 @@ export const machine = {
   initial: State.preEnter,
   states: {
     [State.preEnter]: {
-      entry: ["startEnter"],
+      entry: ["startEnter", "onStateEntry"],
       on: { [Action.ENTER]: State.enter }
     },
     [State.enter]: {
-      entry: ["onEntered"],
+      entry: ["onEntered", "onStateEntry"],
       on: { [Action.ENTERED]: State.idle }
     },
     [State.idle]: {
+      entry: ["onStateEntry"],
       on: { [Action.EXIT]: State.exit }
     },
     [State.exit]: {
+      entry: ["onStateEntry"],
       on: { [Action.EXITED]: State.exited }
     },
     [State.exited]: {
       type: "final",
-      entry: ["onExited"]
+      entry: ["onExited", "onStateEntry"]
     }
   }
 };
@@ -61,7 +66,9 @@ const useTransitionMachine: TransitionMachine<EffectsMap> = (map = {}) => {
   useLayoutEffect(() => {
     const current = machine.states[state];
     if ("entry" in current) {
-      (current.entry || []).map(effect => map[effect]?.());
+      requestNextAnimationFrame(() =>
+        (current.entry || []).map(effect => map[effect]?.())
+      );
     }
     // return () => {
     //   if ("exit" in current) {
