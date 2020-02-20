@@ -1,22 +1,20 @@
 import React, {
+  useCallback,
   useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
-  useState,
-  useCallback
+  useState
 } from "react";
+import useChildrenToKeyMap from "./use-children-to-key-map";
 import useTransitionMachine, {
-  State,
   Action,
-  requestNextAnimationFrame
+  requestNextAnimationFrame,
+  State
 } from "./use-transition-machine";
 import useUniqueId from "./use-unique-id";
-import useChildrenToKeyMap from "./use-children-to-key-map";
 
-type CascadeProps = {
-  // children: React.ReactNode;
-};
+type CascadeProps = {};
 export const Cascade: React.FC<CascadeProps> = props => {
   const keyMap = useChildrenToKeyMap(props.children);
   const [state, setState] = useState<
@@ -31,13 +29,11 @@ export const Cascade: React.FC<CascadeProps> = props => {
 
   useEffect(() => {
     console.log("state", state);
-    console.log("keyMap", keyMap);
   }, [keyMap, state]);
 
   const removeFromState = (key: string) => {
     setState(state => {
       delete state[key];
-      console.log(`key ${key} removed from state`, state[key]);
       return { ...state };
     });
   };
@@ -76,10 +72,8 @@ export const Cascade: React.FC<CascadeProps> = props => {
           state={child.state}
           onEntered={() => {
             // probably just a callback for props
-            console.log(key, "onEntered");
           }}
           onExited={() => {
-            console.log(key, "onExited");
             removeFromState(key);
           }}
         >
@@ -126,11 +120,13 @@ export const CascadeProvider: React.FC<CascadeProviderProps> = props => {
   });
 
   useEffect(() => {
-    [State.enter].includes(props.state) &&
+    if ([State.enter].includes(props.state)) {
       requestNextAnimationFrame(() => send(Action.ENTER));
-    [State.exit].includes(props.state) &&
+    }
+    if ([State.exit].includes(props.state)) {
       requestNextAnimationFrame(() => send(Action.EXIT));
-  }, [props.state, send]);
+    }
+  }, [props.state, send, state]);
 
   const subscribers = useMemo(() => {
     const subscriptions: Subscriptions = {};
@@ -138,11 +134,6 @@ export const CascadeProvider: React.FC<CascadeProviderProps> = props => {
       Object.keys(completedStateActions).forEach(state => {
         if (Object.values(subscriptions).every(current => state === current)) {
           if (completedStateActions[state as State]) {
-            console.log(
-              "SENDING EXIT",
-              subscriptions,
-              completedStateActions[state as State]
-            );
             send(completedStateActions[state as State] as Action);
           }
         }
@@ -155,20 +146,15 @@ export const CascadeProvider: React.FC<CascadeProviderProps> = props => {
     };
 
     const remove = (id: string) => {
-      // delete subscriptions[id];
+      delete subscriptions[id];
       syncChildren();
     };
 
-    const log = () => console.log("subscriptions", subscriptions);
-
     return {
       set,
-      delete: remove,
-      log
+      delete: remove
     };
   }, [send]);
-
-  subscribers.log();
 
   const unsubscribe = (id: string) => {
     subscribers.delete(id);
@@ -191,17 +177,18 @@ export const useCascadeCtx = () => {
   const { state, set, unsubscribe } = useContext(cascadeCtx);
   const id = useUniqueId();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     return () => {
       unsubscribe(id);
     };
-  }, [id, unsubscribe]);
+  }, []); //eslint-disable-line
 
   const curriedSet = (id: string) => (state: State) => set(id, state);
 
   return {
     state: state,
-    set: curriedSet(id)
+    set: curriedSet(id),
+    id
   };
 };
 
@@ -209,16 +196,13 @@ export const useCascade = () => {
   const cascade = useCascadeCtx();
   const [state, send] = useTransitionMachine({
     onStateEntry: () => {
-      console.log("hook level state change", state);
       cascade.set(state);
     }
   });
 
   useEffect(() => {
-    [State.enter].includes(cascade.state) &&
-      requestNextAnimationFrame(() => send(Action.ENTER));
-    [State.exit].includes(cascade.state) &&
-      requestNextAnimationFrame(() => send(Action.EXIT));
+    [State.enter].includes(cascade.state) && send(Action.ENTER);
+    [State.exit].includes(cascade.state) && send(Action.EXIT);
   }, [cascade.state, send]);
 
   const onTransitionEnd = useCallback(() => {

@@ -7,7 +7,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const id = setInterval(() => {
-      setKey(v => ++v);
+      setKey(v => (v < 6 ? (v += 1) : v));
     }, 3000);
 
     return () => {
@@ -16,9 +16,22 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <Cascade>
-      <AnimatedItem key={`key-${key}`} />
-    </Cascade>
+    <div
+      style={{
+        position: "absolute",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0
+      }}
+    >
+      <Cascade>
+        <AnimatedItem key={`key-${key}`} />
+      </Cascade>
+    </div>
   );
 };
 
@@ -31,23 +44,30 @@ const AnimatedItem = () => {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        height: "200px",
-        width: "200px",
+        height: `${
+          [State.exit, State.exited].includes(cascade.state) ? 0 : 100
+        }px`,
+        width: `${
+          [State.exit, State.exited].includes(cascade.state) ? 0 : 100
+        }px`,
         backgroundColor: "blue",
         color: "white",
         fontSize: "20px",
-        transition: "1s all ease",
-        opacity: `${cascade.state === State.exit ? 0 : 1}`,
+        transition: "5s all ease",
+        opacity: `${
+          [State.exit, State.exited].includes(cascade.state) ? 0 : 1
+        }`,
         transform: `translateX(${
-          cascade.state === State.exit
+          [State.exit, State.exited].includes(cascade.state)
             ? 0
-            : cascade.state === State.enter || cascade.state === State.idle
-            ? 800
+            : [State.enter, State.idle].includes(cascade.state)
+            ? 200
             : 0
         }px)`
       }}
       onTransitionEnd={() => cascade.onTransitionEnd()}
     >
+      {cascade.state}
       <AnimatedSubItem />
     </div>
   );
@@ -64,13 +84,15 @@ const AnimatedSubItem = () => {
         backgroundColor: "red",
         color: "white",
         fontSize: "20px",
-        transition: "2s all ease",
-        opacity: `${cascade.state === State.exit ? 0 : 1}`,
+        transition: "7s all ease",
+        opacity: `${
+          [State.exit, State.exited].includes(cascade.state) ? 0 : 1
+        }`,
         transform: `translateY(${
-          cascade.state === State.exit
+          [State.exit, State.exited].includes(cascade.state)
             ? 0
-            : cascade.state === State.enter || cascade.state === State.idle
-            ? 800
+            : [State.enter, State.idle].includes(cascade.state)
+            ? 300
             : 0
         }px)`
       }}

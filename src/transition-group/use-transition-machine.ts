@@ -66,9 +66,7 @@ const useTransitionMachine: TransitionMachine<EffectsMap> = (map = {}) => {
   useLayoutEffect(() => {
     const current = machine.states[state];
     if ("entry" in current) {
-      requestNextAnimationFrame(() =>
-        (current.entry || []).map(effect => map[effect]?.())
-      );
+      (current.entry || []).map(effect => map[effect]?.());
     }
     // return () => {
     //   if ("exit" in current) {
