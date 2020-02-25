@@ -1,19 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Cascade, { useCascade, State } from "./transition-group";
+import { useLocation, Switch, Route, Link } from "react-router-dom";
 import "./App.css";
 
 const App: React.FC = () => {
-  const [key, setKey] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setKey(v => (v < 6 ? (v += 1) : v));
-    }, 3000);
-
-    return () => {
-      clearInterval(id);
-    };
-  }, []);
+  const location = useLocation();
 
   return (
     <div
@@ -28,8 +19,14 @@ const App: React.FC = () => {
         left: 0
       }}
     >
+      <Link to="/">Home</Link>
+      <br />
+      <Link to="/about">About</Link>
       <Cascade>
-        <AnimatedItem key={`key-${key}`} />
+        <Switch key={location.key}>
+          <Route exact path="/" component={AnimatedItem} />
+          <Route path="/about" component={AnimatedItem} />
+        </Switch>
       </Cascade>
     </div>
   );
@@ -53,10 +50,11 @@ const AnimatedItem = () => {
         backgroundColor: "blue",
         color: "white",
         fontSize: "20px",
-        transition: "5s all ease",
+        transition: "0.3s all ease",
         opacity: `${
           [State.exit, State.exited].includes(cascade.state) ? 0 : 1
         }`,
+        transitionDelay: [State.enter].includes(cascade.state) ? "0.3s" : "0s",
         transform: `translateX(${
           [State.exit, State.exited].includes(cascade.state)
             ? 0
@@ -84,10 +82,11 @@ const AnimatedSubItem = () => {
         backgroundColor: "red",
         color: "white",
         fontSize: "20px",
-        transition: "7s all ease",
+        transition: "0.3s all ease",
         opacity: `${
           [State.exit, State.exited].includes(cascade.state) ? 0 : 1
         }`,
+        transitionDelay: [State.enter].includes(cascade.state) ? "0.3s" : "0s",
         transform: `translateY(${
           [State.exit, State.exited].includes(cascade.state)
             ? 0
