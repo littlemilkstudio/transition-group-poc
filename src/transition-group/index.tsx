@@ -218,6 +218,7 @@ export const useCascade = () => {
 
 export default Cascade;
 export { State } from "./use-transition-machine";
+export { default as withTransition } from "./with-transition";
 
 /**
  * Possible Names:
